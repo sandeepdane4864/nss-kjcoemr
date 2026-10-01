@@ -1,0 +1,13 @@
+{
+  "name": "nss-website",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "db": "docker compose up -d",
+    "seed": "npm --prefix server run seed",
+    "dev": "concurrently -n api,web -c blue,red \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build": "npm --prefix client run build",
+    "start": "SERVE_CLIENT=true npm --prefix server start"
+  },
+  "devDependencies": { "concurrently": "^9.1.0" }
+}
