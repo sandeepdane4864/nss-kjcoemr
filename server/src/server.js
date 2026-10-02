@@ -1,5 +1,6 @@
 
 import 'dotenv/config';
+import mongoose from 'mongoose';
 import app from './app.js';
 import connectDB from './config/db.js';
 
@@ -14,27 +15,38 @@ async function ensureDBConnection() {
     throw new Error('JWT_SECRET is missing');
   }
 
-  // Reuse the connection promise across requests.
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
   if (!dbConnectionPromise) {
-    dbConnectionPromise = connectDB().catch((err) => {
-      dbConnectionPromise = null;
-      throw err;
-    });
+    dbConnectionPromise = connectDB()
+      .catch((err) => {
+        dbConnectionPromise = null;
+        throw err;
+      });
   }
 
   await dbConnectionPromise;
+
+  console.log(
+    'MongoDB readyState:',
+    mongoose.connection.readyState
+  );
 }
 
 // Vercel serverless handler
 export default async function handler(req, res) {
+  console.log('Handler invoked:', req.method, req.url);
+
   try {
     await ensureDBConnection();
     return app(req, res);
   } catch (err) {
-    console.error('Backend initialization failed:', err.message);
+    console.error('Backend initialization failed:', err);
 
     return res.status(500).json({
-      message: 'Server initialization failed'
+      message: 'Server initialization failed',
     });
   }
 }
