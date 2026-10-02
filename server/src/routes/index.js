@@ -13,6 +13,7 @@ import Alumni from '../models/Alumni.js';
 import Coordinator from '../models/Coordinator.js';
 import Notice from '../models/Notice.js';
 import Testimonial from '../models/Testimonial.js';
+import * as notifications from '../controllers/notifications.js';
 
 const r = Router();
 const published = { isPublished: true };
@@ -36,6 +37,8 @@ r.get('/auth/me', protect, auth.me);
 r.patch('/auth/me', protect, auth.updateMe);
 r.post('/auth/change-password', protect, auth.changePassword);
 
+r.post('/notifications/token', protect, notifications.saveToken);
+r.post('/notifications/test', protect, notifications.testNotification);
 // ---- users ----
 r.get('/users/public', users.publicList);
 r.get('/users/public/:id', users.publicProfile);

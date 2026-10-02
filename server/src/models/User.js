@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema(
     hoursTotal: { type: Number, default: 0 },
     badges: [{ key: String, label: String, awardedAt: { type: Date, default: Date.now }, _id: false }],
     lastLoginAt: Date,
+    fcmTokens: {
+      type: [String],
+      default: [],
+    },
   },
   { timestamps: true }
 );
