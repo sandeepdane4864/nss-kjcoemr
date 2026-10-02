@@ -43,6 +43,28 @@ export const get = asyncHandler(async (req, res) => {
 export const create = asyncHandler(async (req, res) => {
   const { _id, slug, dailyUpdates, ...data } = req.body;
   const event = await Event.create({ ...data, createdBy: req.user._id });
+
+  // Notify active users who have opted in to browser push when a published event is created.
+  if (event.isPublished) {
+    try {
+      const users = await User.find({
+        status: 'active',
+        fcmTokens: { $exists: true, $ne: [] },
+      }).select('fcmTokens');
+
+      const result = await sendPushToUsers(users, {
+        title: 'New NSS Event',
+        body: event.title,
+        url: `/events/${event.slug || event._id}`,
+      });
+
+      console.info(`New event push notification sent to ${result.sent} device(s).`);
+    } catch (error) {
+      // Event creation should still succeed if push delivery fails.
+      console.error('New event notifications failed:', error.message);
+    }
+  }
+
   res.status(201).json(event);
 });
 
