@@ -23,38 +23,115 @@ const Shell = ({ title, sub, children }) => (
   </section>
 );
 
+
 export function Login() {
   usePageTitle('Log in');
   const { user, login, isStaff } = useAuth();
   const nav = useNavigate();
   const loc = useLocation();
+
   const [f, setF] = useState({ email: '', password: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  if (user) return <Navigate to={loc.state?.from || (isStaff ? '/admin' : '/me')} replace />;
+  const [showPassword, setShowPassword] = useState(false);
+
+  if (user) {
+    return (
+      <Navigate
+        to={loc.state?.from || (isStaff ? '/admin' : '/me')}
+        replace
+      />
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
     setErr('');
+
     try {
       const u = await login(f.email, f.password);
-      nav(loc.state?.from || (['superadmin', 'officer', 'coordinator'].includes(u.role) ? '/admin' : '/me'), { replace: true });
+      nav(
+        loc.state?.from ||
+          (['superadmin', 'officer', 'coordinator'].includes(u.role)
+            ? '/admin'
+            : '/me'),
+        { replace: true }
+      );
     } catch (e2) {
       setErr(e2.message);
     } finally {
       setBusy(false);
     }
   };
+
   return (
     <Shell title="Log in" sub="Use the email you registered with.">
       <form onSubmit={submit} className="form">
-        {err && <p className="alert alert-err" role="alert">{err}</p>}
-        <label className="field"><span className="field-label">Email</span><input className="input" type="email" autoComplete="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-        <label className="field"><span className="field-label">Password</span><input className="input" type="password" autoComplete="current-password" required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></label>
-        <button className="btn btn-primary" disabled={busy}>{busy ? 'Logging in' : 'Log in'}</button>
+        {err && (
+          <p className="alert alert-err" role="alert">
+            {err}
+          </p>
+        )}
+
+        <label className="field">
+          <span className="field-label">Email</span>
+          <input
+            className="input"
+            type="email"
+            autoComplete="email"
+            required
+            value={f.email}
+            onChange={(e) =>
+              setF({ ...f, email: e.target.value })
+            }
+          />
+        </label>
+
+        <label className="field">
+          <span className="field-label">Password</span>
+          <input
+            className="input"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            required
+            value={f.password}
+            onChange={(e) =>
+              setF({ ...f, password: e.target.value })
+            }
+          />
+        </label>
+
+        <label
+          className="show-password"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginTop: '-8px',
+            marginBottom: '8px',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={showPassword}
+            onChange={(e) => setShowPassword(e.target.checked)}
+          />
+          <span>Show password</span>
+        </label>
+
+        <button className="btn btn-primary" disabled={busy}>
+          {busy ? 'Logging in...' : 'Log in'}
+        </button>
       </form>
-      <p className="muted small">New volunteer? <Link to="/register" className="text-link">Create an account</Link></p>
+
+      <p className="muted small">
+        New volunteer?{' '}
+        <Link to="/register" className="text-link">
+          Create an account
+        </Link>
+      </p>
     </Shell>
   );
 }
