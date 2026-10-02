@@ -3,6 +3,9 @@ import Registration from '../models/Registration.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { paginate, escapeRegex, findByIdOrSlug } from '../utils/crud.js';
+import Registration from '../models/Registration.js';
+import User from '../models/User.js';
+import { sendPushToUsers } from '../utils/pushNotifications.js';
 
 export const list = asyncHandler(async (req, res) => {
   const { page, limit, skip } = paginate(req, 12);
@@ -60,15 +63,49 @@ export const remove = asyncHandler(async (req, res) => {
   res.json({ message: 'Deleted' });
 });
 
+
 export const addUpdate = asyncHandler(async (req, res) => {
   const text = String(req.body.text || '').trim();
   if (!text) throw new ApiError(400, 'Update text is required');
+
   const event = await Event.findByIdAndUpdate(
     req.params.id,
-    { $push: { dailyUpdates: { $each: [{ text, by: req.user._id }], $position: 0 } } },
+    {
+      $push: {
+        dailyUpdates: {
+          $each: [{ text, by: req.user._id }],
+          $position: 0,
+        },
+      },
+    },
     { new: true }
   );
+
   if (!event) throw new ApiError(404, 'Event not found');
+
+  try {
+    const registrations = await Registration.find({
+      event: event._id,
+      status: 'registered',
+    }).select('user');
+
+    const userIds = [...new Set(
+      registrations.map((registration) => String(registration.user))
+    )];
+
+    const users = await User.find({
+      _id: { $in: userIds },
+    }).select('fcmTokens');
+
+    await sendPushToUsers(users, {
+      title: `Event Update: ${event.title}`,
+      body: text.slice(0, 200),
+      url: `/events/${event.slug || event._id}`,
+    });
+  } catch (error) {
+    console.error('Event update notifications failed:', error.message);
+  }
+
   res.status(201).json(event.dailyUpdates);
 });
 

@@ -6,6 +6,7 @@ import { awardBadges } from '../utils/badges.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { paginate, escapeRegex } from '../utils/crud.js';
+import { sendPushToUsers } from '../utils/pushNotifications.js';
 
 const publicBase = { status: 'active', isPublic: true, role: { $in: ['volunteer', 'coordinator'] } };
 
@@ -85,17 +86,61 @@ export const adminGet = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
+
 export const setStatus = asyncHandler(async (req, res) => {
-  const { status } = z.object({ status: z.enum(['active', 'rejected', 'suspended', 'pending']) }).parse(req.body);
-  const user = await User.findByIdAndUpdate(req.params.id, { status }, { new: true });
+  const { status } = z.object({
+    status: z.enum(['active', 'rejected', 'suspended', 'pending']),
+  }).parse(req.body);
+
+  const user = await User.findById(req.params.id);
   if (!user) throw new ApiError(404, 'User not found');
+
+  const wasPending = user.status === 'pending';
+  user.status = status;
+  await user.save();
+
+  if (wasPending && status === 'active') {
+    try {
+      await sendPushToUsers([user], {
+        title: 'NSS Membership Approved',
+        body: 'Your NSS membership has been approved. Welcome to NSS KJCOEMR!',
+        url: '/me',
+      });
+    } catch (error) {
+      console.error('Membership notification failed:', error.message);
+    }
+  }
+
   res.json(user);
 });
 
+
 export const bulkApprove = asyncHandler(async (req, res) => {
-  const { ids } = z.object({ ids: z.array(z.string()).min(1).max(200) }).parse(req.body);
-  const r = await User.updateMany({ _id: { $in: ids }, status: 'pending' }, { status: 'active' });
-  res.json({ approved: r.modifiedCount });
+  const { ids } = z.object({
+    ids: z.array(z.string()).min(1).max(200),
+  }).parse(req.body);
+
+  const users = await User.find({
+    _id: { $in: ids },
+    status: 'pending',
+  });
+
+  await User.updateMany(
+    { _id: { $in: users.map((user) => user._id) } },
+    { $set: { status: 'active' } }
+  );
+
+  try {
+    await sendPushToUsers(users, {
+      title: 'NSS Membership Approved',
+      body: 'Your NSS membership has been approved. Welcome to NSS KJCOEMR!',
+      url: '/me',
+    });
+  } catch (error) {
+    console.error('Bulk approval notifications failed:', error.message);
+  }
+
+  res.json({ approved: users.length });
 });
 
 export const setRole = asyncHandler(async (req, res) => {
