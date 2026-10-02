@@ -1,5 +1,7 @@
+
 import { initializeApp } from 'firebase/app';
-import { getMessaging, isSupported } from 'firebase/messaging';
+import { getAnalytics, isSupported } from 'firebase/analytics';
+import { getMessaging, isSupported as messagingSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -8,17 +10,17 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 
-export async function getFirebaseMessaging() {
-  if (typeof window === 'undefined') return null;
+export { app };
 
-  try {
-    const supported = await isSupported();
-    return supported ? getMessaging(app) : null;
-  } catch {
-    return null;
-  }
-}
+export const analyticsReady = isSupported()
+  .then((supported) => supported ? getAnalytics(app) : null)
+  .catch(() => null);
+
+export const messagingReady = messagingSupported()
+  .then((supported) => supported ? getMessaging(app) : null)
+  .catch(() => null);
