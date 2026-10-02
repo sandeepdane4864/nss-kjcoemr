@@ -3,7 +3,6 @@ import Registration from '../models/Registration.js';
 import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { paginate, escapeRegex, findByIdOrSlug } from '../utils/crud.js';
-import Registration from '../models/Registration.js';
 import User from '../models/User.js';
 import { sendPushToUsers } from '../utils/pushNotifications.js';
 
@@ -62,7 +61,6 @@ export const remove = asyncHandler(async (req, res) => {
   await Registration.deleteMany({ event: event._id });
   res.json({ message: 'Deleted' });
 });
-
 
 export const addUpdate = asyncHandler(async (req, res) => {
   const text = String(req.body.text || '').trim();
