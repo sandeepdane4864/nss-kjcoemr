@@ -1657,3 +1657,8 @@ textarea.input { resize: vertical; }
     transition: none;
   }
 }
+.auth-wheel {
+  width: 600px;
+  height: 600px;
+  max-width: 100%;
+}
