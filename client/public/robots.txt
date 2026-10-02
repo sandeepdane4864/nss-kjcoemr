@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://nss-kjcoemr.vercel.app/sitemap.xml

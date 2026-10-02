@@ -1540,3 +1540,16 @@ textarea.input { resize: vertical; }
   }
 
 }
+
+.auth-side {
+  position: relative;
+  overflow: hidden;
+  background: var(--navy-900);
+  color: #fff;
+  padding: clamp(32px, 6vw, 80px);
+  padding-bottom: calc(clamp(32px, 6vw, 80px) + 40px);
+  padding-left: calc(clamp(32px, 6vw, 80px) + 30px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
