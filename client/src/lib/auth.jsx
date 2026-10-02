@@ -1,4 +1,3 @@
-
 import {
   createContext,
   useCallback,
@@ -58,9 +57,21 @@ export function AuthProvider({ children }) {
         return false;
       }
 
+      // The public service worker cannot read Vite environment variables.
+      // Pass the Firebase web-app config through its registration URL.
+      const workerParams = new URLSearchParams({
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+        appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+        measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || '',
+      });
+
       const serviceWorkerRegistration =
         await navigator.serviceWorker.register(
-          '/firebase-messaging-sw.js'
+          `/firebase-messaging-sw.js?${workerParams.toString()}`
         );
 
       const fcmToken = await getToken(messaging, {
@@ -113,7 +124,7 @@ export function AuthProvider({ children }) {
       setToken(res.token);
       setUser(res.user);
 
-      // Notification setup failures will not block login.
+      // Notification setup failures will not block normal login.
       enableNotifications().catch(() => {});
 
       return res.user;
@@ -125,7 +136,7 @@ export function AuthProvider({ children }) {
     try {
       await api.post('/auth/logout');
     } catch {
-      // Ignore logout API errors and clear local authentication.
+      // Ignore logout errors and clear local authentication.
     }
 
     setToken(null);
