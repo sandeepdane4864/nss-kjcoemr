@@ -1,7 +1,9 @@
 
 import { initializeApp } from 'firebase/app';
-import { getAnalytics, isSupported } from 'firebase/analytics';
-import { getMessaging, isSupported as messagingSupported } from 'firebase/messaging';
+import {
+  getMessaging,
+  isSupported,
+} from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -15,12 +17,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+export async function getFirebaseMessaging() {
+  try {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const supported = await isSupported();
+
+    if (!supported) {
+      return null;
+    }
+
+    return getMessaging(app);
+  } catch (error) {
+    console.error('Firebase Messaging initialization failed:', error);
+    return null;
+  }
+}
+
 export { app };
-
-export const analyticsReady = isSupported()
-  .then((supported) => supported ? getAnalytics(app) : null)
-  .catch(() => null);
-
-export const messagingReady = messagingSupported()
-  .then((supported) => supported ? getMessaging(app) : null)
-  .catch(() => null);
