@@ -10,23 +10,37 @@ function PhotoManager({ base, initial, folder, onChanged }) {
   const toast = useToast();
   const [photos, setPhotos] = useState(initial || []);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState('');
 
   const add = async (e) => {
     const files = [...(e.target.files || [])];
+    e.target.value = '';
     if (!files.length) return;
     setBusy(true);
+    const up = [];
+    let failed = null;
+    for (let i = 0; i < files.length; i += 1) {
+      setProgress(`${i + 1} of ${files.length}`);
+      try {
+        up.push(await api.upload(files[i], folder));
+      } catch (err) {
+        failed = err;
+        break;
+      }
+    }
     try {
-      const up = await api.uploadMany(files, folder);
-      const res = await api.post(`${base}/photos`, { photos: up });
-      setPhotos(res.photos || res);
-      toast.success(`${up.length} photo${up.length > 1 ? 's' : ''} added`);
-      onChanged?.();
+      if (up.length) {
+        const res = await api.post(`${base}/photos`, { photos: up });
+        setPhotos(res.photos || res);
+        toast.success(`${up.length} photo${up.length > 1 ? 's' : ''} added`);
+        onChanged?.();
+      }
     } catch (err) {
       toast.error(err.message);
-    } finally {
-      setBusy(false);
-      e.target.value = '';
     }
+    if (failed) toast.error(`Stopped after ${up.length} of ${files.length}. ${failed.message}`);
+    setProgress('');
+    setBusy(false);
   };
   const remove = async (p) => {
     try {
@@ -41,7 +55,7 @@ function PhotoManager({ base, initial, folder, onChanged }) {
     <section className="extra">
       <div className="extra-head">
         <h3>Photos ({photos.length})</h3>
-        <label className="btn btn-ghost btn-sm">{busy ? 'Uploading' : 'Add photos'}<input type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={add} disabled={busy} /></label>
+        <label className="btn btn-ghost btn-sm">{busy ? `Uploading ${progress}` : 'Add photos'}<input type="file" hidden multiple accept="image/jpeg,image/png,image/webp" onChange={add} disabled={busy} /></label>
       </div>
       <div className="photo-admin">
         {photos.map((p) => (
