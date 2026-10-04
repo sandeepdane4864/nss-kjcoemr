@@ -1572,7 +1572,7 @@ textarea.input { resize: vertical; }
   width: max-content;
   flex-wrap: nowrap;
   align-items: stretch;
-  animation: nss-gallery-scroll 90s linear infinite;
+  animation: nss-gallery-scroll 180s linear infinite;
   will-change: transform;
 }
 
